@@ -2,14 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 )
 
 type Response struct {
 	IsEven bool `json:"is_even"`
 }
+
+var PORT = os.Getenv("PORT")
 
 func isEvenHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -45,8 +49,16 @@ func isEvenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	if PORT == "" {
+		fmt.Println("PORT is not set, using default port 8080")
+		PORT = ":8080"
+	} else if PORT[0] != ':' {
+		PORT = ":" + PORT
+	}
+
 	http.HandleFunc("/iseven", isEvenHandler)
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(PORT, nil)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
