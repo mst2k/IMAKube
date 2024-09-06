@@ -6,7 +6,7 @@ function App() {
   const [isEven, setIsEven] = useState<boolean | undefined>();
 
   async function getData(num: number) {
-    const url = `/iseven?number=${num}`;
+    const url = `/api/iseven?number=${num}`;
     const response = await fetch(url);
     const data = await response.json();
     setIsEven(data.is_even);
