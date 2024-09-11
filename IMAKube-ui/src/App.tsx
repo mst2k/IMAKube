@@ -1,5 +1,5 @@
 import "./App.css"
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,8 +21,23 @@ export default function KubernetesDemoPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [totalRequests, setTotalRequests] = useState<number>(0)
+  const [backendStatus, setBackendStatus] = useState<'online' | 'offline'>('offline')
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const requestCountRef = useRef<number>(0)
+
+  const checkBackendStatus = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:8080/healthz')
+      setBackendStatus(response.ok ? 'online' : 'offline')
+    } catch (error) {
+      setBackendStatus('offline')
+    }
+  }, [])
+
+  useEffect(() => {
+    const statusInterval = setInterval(checkBackendStatus, 500) // Check every 5 seconds
+    return () => clearInterval(statusInterval)
+  }, [checkBackendStatus])
 
   const addLogEntry = useCallback((type: 'request' | 'response' | 'error', message: string) => {
     setLogs(prev => [
@@ -88,10 +103,18 @@ export default function KubernetesDemoPage() {
 
       <Card className="w-full mx-auto shadow-lg">
         <CardHeader className="bg-blue-600 text-white">
-          <CardTitle className="text-2xl">Kubernetes HPA Demo</CardTitle>
-          <CardDescription className="text-blue-100">
-            Kontinuierliche Lastgenerierung und Backend-Absturz zur Demonstration des Horizontal Pod Autoscaling
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-2xl text-left">Kubernetes HPA Demo</CardTitle>
+              <CardDescription className="text-blue-100">
+                Kontinuierliche Lastgenerierung und Backend-Absturz zur Demonstration des Horizontal Pod Autoscaling
+              </CardDescription>
+            </div>
+            <div className="flex items-center">
+              <span className="mr-2 text-white">Backend Status:</span>
+              <div className={`w-4 h-4 rounded-full ${backendStatus === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
           <Alert>
@@ -141,7 +164,7 @@ export default function KubernetesDemoPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleStartLoad} disabled={isLoading} size="lg" className="w-1/3">
+                  <Button onClick={handleStartLoad} disabled={isLoading || backendStatus === 'offline'} size="lg" className="w-1/3">
                     <BarChart className="mr-2 h-5 w-5" />
                     Start Load
                   </Button>
@@ -167,7 +190,7 @@ export default function KubernetesDemoPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleCrashBackend} disabled={isLoading} variant="destructive" size="lg" className="w-1/3">
+                  <Button onClick={handleCrashBackend} disabled={isLoading || backendStatus === 'offline'} variant="destructive" size="lg" className="w-1/3">
                     <AlertCircle className="mr-2 h-5 w-5" />
                     Crash Backend
                   </Button>
