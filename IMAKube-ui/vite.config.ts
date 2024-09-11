@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
 
 // Load environment variables from the process.env
 let port = parseInt(process.env.VITE_PORT || "5000", 10);
@@ -17,5 +18,10 @@ export default defineConfig({
     strictPort: true,
     host: true,
     origin: origin,
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
 });
