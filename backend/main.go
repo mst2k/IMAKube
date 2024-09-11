@@ -1,65 +1,92 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
-type Response struct {
-	IsEven bool `json:"is_even"`
-}
-
-var PORT = os.Getenv("PORT")
-
-func isEvenHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	numberStr := r.URL.Query().Get("number")
-	if numberStr == "" {
-		http.Error(w, "Missing 'number' query parameter", http.StatusBadRequest)
-		return
-	}
-
-	number, err := strconv.Atoi(numberStr)
-	if err != nil {
-		http.Error(w, "Invalid number", http.StatusBadRequest)
-		return
-	}
-
-	isEven := number%2 == 0
-	response := Response{IsEven: isEven}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
 func main() {
+	r := mux.NewRouter()
 
-	if PORT == "" {
-		fmt.Println("PORT is not set, using default port 8080")
-		PORT = ":8080"
-	} else if PORT[0] != ':' {
-		PORT = ":" + PORT
+	r.HandleFunc("/api/generate-load", generateLoadHandler).Methods("GET")
+	r.HandleFunc("/api/crash-backend", crashBackendHandler).Methods("GET")
+	r.HandleFunc("/healthz", healthCheckHandler).Methods("GET")
+
+	// Create a new CORS handler
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"}, // Allow all origins
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		// Enable Debugging for testing, consider disabling in production
+		Debug: false,
+	})
+
+	// Wrap the router with the CORS handler
+	handler := c.Handler(r)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		fmt.Println("No PORT specified. Defaulting to 8080")
+		port = "8080"
 	}
 
-	http.HandleFunc("/iseven", isEvenHandler)
-	err := http.ListenAndServe(PORT, nil)
-	if err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	srv := &http.Server{
+		Handler:      handler,
+		Addr:         ":" + port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
+
+	log.Printf("Server is starting on port %s", port)
+	log.Fatal(srv.ListenAndServe())
+}
+
+func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
+	nStr := r.URL.Query().Get("n")
+	n, err := strconv.Atoi(nStr)
+	if err != nil || n < 0 {
+		http.Error(w, "Invalid input for n", http.StatusBadRequest)
+		return
+	}
+
+	result := calculateFibonacci(n)
+	fmt.Println(result)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"result": %d}`, result)
+}
+
+func calculateFibonacci(n int) int {
+	if n <= 1 {
+		return n
+	}
+	return calculateFibonacci(n-1) + calculateFibonacci(n-2)
+}
+
+func crashBackendHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"message": "Backend will crash now"}`)
+	
+	// Flush the response to ensure it's sent before crashing
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	log.Println("Crashing backend as requested")
+	go func() {
+		time.Sleep(100 * time.Millisecond) // Small delay to ensure response is sent
+		os.Exit(1)
+	}()
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "OK")
 }

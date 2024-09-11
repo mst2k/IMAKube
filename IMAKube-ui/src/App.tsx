@@ -1,5 +1,5 @@
 import "./App.css"
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,30 +8,51 @@ import { AlertCircle, BarChart, Info, PresentationIcon, StopCircle } from "lucid
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+interface LogEntry {
+  id: number;
+  type: 'request' | 'response' | 'error';
+  message: string;
+  timestamp: Date;
+}
+
 export default function KubernetesDemoPage() {
   const [fibonacciNumber, setFibonacciNumber] = useState<number>(30)
-  const [requestInterval, setRequestInterval] = useState<number>(100)
+  const [requestInterval, setRequestInterval] = useState<number>(1000)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [result, setResult] = useState<string | null>(null)
+  const [logs, setLogs] = useState<LogEntry[]>([])
   const [totalRequests, setTotalRequests] = useState<number>(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const requestCountRef = useRef<number>(0)
+
+  const addLogEntry = useCallback((type: 'request' | 'response' | 'error', message: string) => {
+    setLogs(prev => [
+      { id: Date.now(), type, message, timestamp: new Date() },
+      ...prev.slice(0, 39) // Keep only the last 40 entries
+    ])
+  }, [])
+
+  const sendRequest = useCallback(async () => {
+    const requestId = ++requestCountRef.current
+    setTotalRequests(requestId)
+    addLogEntry('request', `Anfrage ${requestId}: Fibonacci(${fibonacciNumber}) gesendet`)
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/generate-load?n=${fibonacciNumber}`)
+      const data = await response.json()
+      addLogEntry('response', `Antwort ${requestId}: Fibonacci(${fibonacciNumber}) = ${data.result}`)
+    } catch (error) {
+      console.error('Error sending request:', error)
+      addLogEntry('error', `Fehler ${requestId}: ${error}`)
+    }
+  }, [fibonacciNumber, addLogEntry])
 
   const handleStartLoad = () => {
     setIsLoading(true)
-    setResult(null)
+    setLogs([])
+    requestCountRef.current = 0
     setTotalRequests(0)
 
-    const sendRequest = async () => {
-      try {
-        const response = await fetch(`/api/generate-load?n=${fibonacciNumber}`)
-        const data = await response.json()
-        setTotalRequests(prev => prev + 1)
-        setResult(`Laufende Lastgenerierung. Bisher ${totalRequests + 1} Anfragen gesendet.`)
-      } catch (error) {
-        console.error('Error sending request:', error)
-      }
-    }
-
+    sendRequest() // Sende sofort eine erste Anfrage
     intervalRef.current = setInterval(sendRequest, requestInterval)
   }
 
@@ -41,24 +62,22 @@ export default function KubernetesDemoPage() {
       intervalRef.current = null
     }
     setIsLoading(false)
-    setResult(`Lastgenerierung gestoppt. Insgesamt ${totalRequests} Anfragen gesendet.`)
   }
 
   const handleCrashBackend = async () => {
     setIsLoading(true)
-    setResult(null)
     try {
-      await fetch('/api/crash-backend', { method: 'GET' })
-      setResult('Backend-Absturz ausgelöst. Der Service sollte in Kürze neu starten.')
+      await fetch('http://localhost:8080/api/crash-backend', { method: 'GET' })
+      addLogEntry('response', 'Backend-Absturz ausgelöst. Der Service sollte in Kürze neu starten.')
     } catch (error) {
-      setResult('Fehler beim Auslösen des Backend-Absturzes. Der Service könnte bereits abgestürzt sein.')
+      addLogEntry('error', 'Fehler beim Auslösen des Absturzes. Das Backend konnte nicht erreicht werden - ist es vielleicht schon abgestürzt?')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="container min-w-2xl mx-auto p-4 min-h-screen">
+    <div className="container mx-auto p-4 min-h-screen">
       <header className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Informationsmanagement / ERP-Systeme</h1>
         <div className="flex items-center justify-center text-xl text-blue-600">
@@ -67,7 +86,7 @@ export default function KubernetesDemoPage() {
         </div>
       </header>
 
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
+      <Card className="w-full mx-auto shadow-lg">
         <CardHeader className="bg-blue-600 text-white">
           <CardTitle className="text-2xl">Kubernetes HPA Demo</CardTitle>
           <CardDescription className="text-blue-100">
@@ -90,27 +109,33 @@ export default function KubernetesDemoPage() {
               Beobachten Sie, wie Kubernetes auf die Last reagiert und automatisch skaliert!
             </AlertDescription>
           </Alert>
-          <div className="space-y-2">
-            <Label htmlFor="fibonacciNumber">Zu berechnende Fibonacci-Zahl</Label>
-            <Input
-              id="fibonacciNumber"
-              type="number"
-              value={fibonacciNumber}
-              onChange={(e) => setFibonacciNumber(Math.max(1, parseInt(e.target.value) || 1))}
-              min="1"
-              className="text-lg"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="requestInterval">Intervall zwischen Anfragen (ms)</Label>
-            <Input
-              id="requestInterval"
-              type="number"
-              value={requestInterval}
-              onChange={(e) => setRequestInterval(Math.max(100, parseInt(e.target.value) || 100))}
-              min="100"
-              className="text-lg"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="fibonacciNumber">Zu berechnende Fibonacci-Zahl</Label>
+              <Input
+                id="fibonacciNumber"
+                type="number"
+                value={fibonacciNumber}
+                onChange={(e) => setFibonacciNumber(Math.max(1, parseInt(e.target.value) || 1))}
+                min="1"
+                className="text-lg"
+              />
+            </div>
+            <div>
+              <Label htmlFor="requestInterval">Intervall zwischen Anfragen (ms)</Label>
+              <Input
+                id="requestInterval"
+                type="number"
+                value={requestInterval}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setRequestInterval(Math.max(100, isNaN(value) ? 100 : value));
+                }}
+                min="100"
+                step="0.1"
+                className="text-lg"
+              />
+            </div>
           </div>
           <div className="flex space-x-4">
             <TooltipProvider>
@@ -154,13 +179,42 @@ export default function KubernetesDemoPage() {
             </TooltipProvider>
           </div>
         </CardContent>
-        <CardFooter className="bg-gray-50">
-          {result && (
-            <Alert className="w-full">
-              <AlertTitle>Status</AlertTitle>
-              <AlertDescription>{result}</AlertDescription>
-            </Alert>
-          )}
+        <CardFooter className="bg-gray-50 flex-col items-start">
+          <Alert className="w-full mb-4">
+            <AlertTitle>Status</AlertTitle>
+            <AlertDescription>
+              Gesendete Anfragen: {totalRequests}
+            </AlertDescription>
+          </Alert>
+          <div className="w-full grid grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-bold mb-2">Anfragen</h3>
+              <div className="space-y-2 max-h-60 min-h-60 overflow-y-auto pr-2">
+                {logs.filter(log => log.type === 'request').map((log) => (
+                  <Alert key={log.id} variant="default">
+                    <AlertDescription>
+                      [{log.timestamp.toLocaleTimeString()}] 🔼 {log.message}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">Antworten & Fehler</h3>
+              <div className="space-y-2 max-h-60 min-h-60 overflow-y-auto pr-2">
+                {logs.filter(log => log.type === 'response' || log.type === 'error').map((log) => (
+                  <Alert key={log.id} variant={log.type === 'error' ? 'destructive' : 'default'}>
+                    <AlertDescription>
+                      [{log.timestamp.toLocaleTimeString()}] 
+                      {log.type === 'response' && '🔽 '}
+                      {log.type === 'error' && '❌ '}
+                      {log.message}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </div>
+          </div>
         </CardFooter>
       </Card>
     </div>
