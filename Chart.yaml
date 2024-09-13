@@ -1,0 +1,19 @@
+apiVersion: v2
+name: imakube
+description: A Helm chart for the IMAKube application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+- name: frontend
+  version: 0.1.0
+  repository: file://IMAKube-ui/chart
+- name: backend
+  version: 0.1.0
+  repository: file://backend/chart
+- name: ingress-nginx
+  version: 4.7.1
+  repository: https://kubernetes.github.io/ingress-nginx
+- name: metrics-server
+  version: 3.8.2
+  repository: https://kubernetes-sigs.github.io/metrics-server/
+  condition: metrics-server.enabled

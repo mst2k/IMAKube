@@ -1,0 +1,8 @@
+replicaCount: 1
+image:
+  repository: imakube-frontend
+  tag: latest
+  pullPolicy: Never
+service:
+  type: ClusterIP
+  port: 5000

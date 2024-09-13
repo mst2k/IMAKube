@@ -1,0 +1,40 @@
+frontend:
+  replicaCount: 1
+  image:
+    repository: imakube-frontend
+    tag: latest
+    pullPolicy: Never
+
+backend:
+  replicaCount: 1
+  image:
+    repository: imakube-backend
+    tag: latest
+    pullPolicy: Never
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+nginx-ingress:
+  controller:
+    replicaCount: 1
+    service:
+      type: NodePort
+
+metrics-server:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: localhost
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend

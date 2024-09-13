@@ -1,0 +1,15 @@
+dependencies:
+- name: frontend
+  repository: file://IMAKube-ui/chart
+  version: 0.1.0
+- name: backend
+  repository: file://backend/chart
+  version: 0.1.0
+- name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 4.7.1
+- name: metrics-server
+  repository: https://kubernetes-sigs.github.io/metrics-server/
+  version: 3.8.2
+digest: sha256:aa91711c0d0a3b92ac4f28d84cc4aa1c7d3ba49f4d3da6a1421610167b867f17
+generated: "2024-09-13T17:26:47.763370268+02:00"

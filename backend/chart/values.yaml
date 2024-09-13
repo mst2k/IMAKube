@@ -1,0 +1,22 @@
+replicaCount: 1
+image:
+  repository: imakube-backend
+  tag: latest
+  pullPolicy: Never
+service:
+  type: ClusterIP
+  port: 5000
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  scaleDown:
+    stabilizationWindowSeconds: 30 #Standart ist 300
+    percentageShutdown: 100
+    periodSeconds: 15
+  scaleUp:
+    stabilizationWindowSeconds: 0
+    percentageIncrease: 100
+    maxPodsIncrease: 2
+    periodSeconds: 15
