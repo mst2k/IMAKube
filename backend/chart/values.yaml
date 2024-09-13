@@ -12,11 +12,11 @@ autoscaling:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   scaleDown:
-    stabilizationWindowSeconds: 30 #Standart ist 300
+    stabilizationWindowSeconds: 0 #Standart ist 300
     percentageShutdown: 100
-    periodSeconds: 15
+    periodSeconds: 5
   scaleUp:
     stabilizationWindowSeconds: 0
     percentageIncrease: 100
     maxPodsIncrease: 2
-    periodSeconds: 15
+    periodSeconds: 5

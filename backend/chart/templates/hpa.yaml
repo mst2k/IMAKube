@@ -1,4 +1,4 @@
-{{- if .Values.autoscaling.enabled }}
+---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -33,4 +33,3 @@ spec:
       - type: Pods
         value: {{ .Values.autoscaling.scaleUp.maxPodsIncrease }}
         periodSeconds: {{ .Values.autoscaling.scaleUp.periodSeconds }}
-{{- end }}

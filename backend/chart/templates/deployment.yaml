@@ -26,3 +26,13 @@ spec:
             cpu: 100m
           limits:
             cpu: 300m
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: 2
+          periodSeconds: 2
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 2"]
