@@ -129,3 +129,38 @@ helm upgrade --install imakube . \
 ```
 
 Viel Erfolg!
+
+# Default downscale verhalten ändern unter Docker Desktop
+
+
+priviliged shell
+
+```bash
+docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i sh 
+```
+
+config vom controller manager ändern
+
+```bash
+vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-controller-manager
+    tier: control-plane
+  name: kube-controller-manager
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    ...
+    - --horizontal-pod-autoscaler-sync-period=10s
+    - --horizontal-pod-autoscaler-downscale-delay=10s
+    - --horizontal-pod-autoscaler-downscale-stabilization=10s
+    ...
+```
