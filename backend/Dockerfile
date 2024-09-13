@@ -9,7 +9,7 @@ RUN go build -v -o server
 FROM alpine:3.18
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /app/server /app/server
-ENV PORT 8080
-EXPOSE $PORT:8080
+ENV PORT 5000
+EXPOSE $PORT:5000
 
 CMD ["/app/server"]

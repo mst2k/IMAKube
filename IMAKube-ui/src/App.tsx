@@ -27,7 +27,7 @@ export default function KubernetesDemoPage() {
 
   const checkBackendStatus = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8080/healthz')
+      const response = await fetch('/api/healthz', { signal: AbortSignal.timeout(1000) })
       setBackendStatus(response.ok ? 'online' : 'offline')
     } catch (error) {
       setBackendStatus('offline')
@@ -35,7 +35,7 @@ export default function KubernetesDemoPage() {
   }, [])
 
   useEffect(() => {
-    const statusInterval = setInterval(checkBackendStatus, 500) // Check every 5 seconds
+    const statusInterval = setInterval(checkBackendStatus, 500) 
     return () => clearInterval(statusInterval)
   }, [checkBackendStatus])
 
@@ -52,7 +52,7 @@ export default function KubernetesDemoPage() {
     addLogEntry('request', `Anfrage ${requestId}: Fibonacci(${fibonacciNumber}) gesendet`)
 
     try {
-      const response = await fetch(`http://localhost:8080/api/generate-load?n=${fibonacciNumber}`)
+      const response = await fetch(`/api/generate-load?n=${fibonacciNumber}`)
       const data = await response.json()
       addLogEntry('response', `Antwort ${requestId}: Fibonacci(${fibonacciNumber}) = ${data.result}`)
     } catch (error) {
@@ -82,7 +82,7 @@ export default function KubernetesDemoPage() {
   const handleCrashBackend = async () => {
     setIsLoading(true)
     try {
-      await fetch('http://localhost:8080/api/crash-backend', { method: 'GET' })
+      await fetch('/api/crash-backend', { method: 'GET' })
       addLogEntry('response', 'Backend-Absturz ausgelöst. Der Service sollte in Kürze neu starten.')
     } catch (error) {
       addLogEntry('error', 'Fehler beim Auslösen des Absturzes. Das Backend konnte nicht erreicht werden - ist es vielleicht schon abgestürzt?')

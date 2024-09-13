@@ -15,8 +15,8 @@ import (
 func main() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/api/generate-load", generateLoadHandler).Methods("GET")
-	r.HandleFunc("/api/crash-backend", crashBackendHandler).Methods("GET")
+	r.HandleFunc("/generate-load", generateLoadHandler).Methods("GET")
+	r.HandleFunc("/crash-backend", crashBackendHandler).Methods("GET")
 	r.HandleFunc("/healthz", healthCheckHandler).Methods("GET")
 
 	// Create a new CORS handler
