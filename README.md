@@ -1,12 +1,35 @@
-# Project Name
+# Kubernetes HPA Demo
+
+
+Dieses Projekt wurde für die Präsentation im Modul "Informationsmanagement / ERP-Systeme" entwickelt, um Kubernetes-Konzepte zu demonstrieren. Es zeigt die kontinuierliche Lastgenerierung und Backend-Absturz zur Demonstration des Horizontal Pod Autoscaling (HPA).
+
+
+![{0791844E-63C7-4537-9CC5-039658465CC5}](https://github.com/user-attachments/assets/d1984f09-55fc-4c0d-b07f-f5697b114a10)
+
 
 ## Inhaltsverzeichnis
-1. [Voraussetzungen](#voraussetzungen)
-2. [Projekt klonen](#projekt-klonen)
-3. [Docker-Images bauen](#docker-images-bauen)
-4. [Lokale Ausführung mit Docker Compose](#lokale-ausführung-mit-docker-compose)
-5. [Installation in Kubernetes](#installation-in-kubernetes)
-6. [Aktualisierung in Kubernetes](#aktualisierung-in-kubernetes)
+1. [Hauptkomponenten](#hauptkomponenten)
+2. [Voraussetzungen](#voraussetzungen)
+3. [Projekt klonen](#projekt-klonen)
+4. [Docker-Images bauen](#docker-images-bauen)
+5. [Lokale Ausführung mit Docker Compose](#lokale-ausführung-mit-docker-compose)
+6. [Installation in Kubernetes](#installation-in-kubernetes)
+7. [Aktualisierung in Kubernetes](#aktualisierung-in-kubernetes)
+
+## Hauptkomponenten
+
+### Backend (Go)
+- `/generate-load`: Berechnung der angegebenen Fibonacci-Folge
+- `/crash-backend`: Simuliert einen Fatal Crash des Backends
+- `/healthz`: Gibt Auskunft, ob der Backendservice bereit ist
+
+### Frontend (React)
+- Interaktion mit Backend und Visualisierung
+
+### Infrastruktur
+- **Docker Desktop**: Stellt leichtgewichtige Kubernetes Distribution bereit
+- **NGINX Ingress Controller**: Verwaltet eingehenden Netzwerkverkehr
+- **Helm**: Fungiert als Paketmanager für Kubernetes-Anwendungen
 
 ## Voraussetzungen
 
@@ -132,6 +155,7 @@ Viel Erfolg!
 
 # Default downscale verhalten ändern unter Docker Desktop
 
+Das defaul Verhalten (Zeit) für das downscaling in Kubernetes kann durch die Folgenden Schritte verkürzt werden. Dies war notwendig, da die Zeit für die Demo begrenzt war.
 
 priviliged shell
 
